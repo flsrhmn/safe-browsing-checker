@@ -1,22 +1,20 @@
-# Use official Python image
+# Updated Dockerfile for web server wrapper
 FROM python:3.11-slim
 
-# Set environment variables
-ENV PYTHONUNBUFFERED=1 \
-    GOOGLE_CLOUD_PROJECT=safe-browsing-check-461816
-
-# Install dependencies
-RUN apt-get update && apt-get install -y \
-    build-essential \
-    curl \
-    && rm -rf /var/lib/apt/lists/*
+# Install a tiny web server
+RUN pip install flask
 
 # Copy files
 WORKDIR /app
 COPY . .
 
-# Install Python packages
+# Install dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Run the script
-CMD ["python", "main.py"]
+# Create health check endpoint
+RUN echo "from flask import Flask; app = Flask(__name__)" > healthcheck.py
+RUN echo "@app.route('/')" >> healthcheck.py
+RUN echo "def health(): return 'OK'" >> healthcheck.py
+
+# Start script
+CMD ["sh", "-c", "python healthcheck.py & python main.py"]
